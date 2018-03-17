@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::fmt;
+use std::mem;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -40,7 +41,24 @@ impl Value {
     }
 }
 
-// This Display insitrait is mostly for debugging.
+impl From<Vec<Rc<Value>>> for Value {
+    fn from(mut vec: Vec<Rc<Value>>) -> Self {
+        let mut conductor = Rc::try_unwrap(vec.pop().unwrap()).unwrap();
+
+        vec.reverse();
+        for value in vec.into_iter() {
+            // XXX: Is there something better we can pass as a second argument? Constructing a new
+            // list seems wasteful, honestly.
+            let old_conductor = mem::replace(&mut conductor, Value::empty_list());
+            let new_conductor = Value::cons(value, Rc::new(old_conductor));
+            conductor = new_conductor;
+        }
+
+        conductor
+    }
+}
+
+// This Display trait is mostly for debugging.
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

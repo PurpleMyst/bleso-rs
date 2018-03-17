@@ -15,7 +15,6 @@ impl<'a> Parser<'a> {
     pub fn new(code: &'a str) -> Self {
         Self {
             code: code.chars(),
-
             parts: Vec::new(),
         }
     }
@@ -64,24 +63,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parts_to_sexpr(mut self) -> Value {
-        let mut conductor = Rc::try_unwrap(self.parts.pop().unwrap()).unwrap();
-
-        self.parts.reverse();
-        for value in self.parts.into_iter() {
-            // XXX: Is there something better we can pass as a second argument? Constructing a new
-            // list seems wasteful, honestly.
-            let old_conductor = mem::replace(&mut conductor, Value::empty_list());
-            let new_conductor = Value::cons(value, Rc::new(old_conductor));
-            conductor = new_conductor;
-        }
-
-        conductor
+    fn root(self) -> Value {
+        Value::from(self.parts)
     }
 }
 
 pub fn parse(code: &str) -> Value {
     let mut parser = Parser::new(code);
     parser.parse();
-    parser.parts_to_sexpr()
+    parser.root()
 }

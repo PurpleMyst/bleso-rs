@@ -1,75 +1,48 @@
-use std::rc::Rc;
 use std::mem;
 use std::str::Chars;
 
 use values::Value;
 
-#[derive(Debug)]
-struct Parser<'a> {
-    code: Chars<'a>,
 
-    parts: Vec<Rc<Value>>,
-}
+fn parse_impl(parts: &mut Vec<Value>, chars: &mut Chars) {
+    let mut buf = String::new();
 
-impl<'a> Parser<'a> {
-    pub fn new(code: &'a str) -> Self {
-        Self {
-            code: code.chars(),
-            parts: Vec::new(),
-        }
-    }
-
-    fn append_value(&mut self, buf: String) {
-        let value = if let Ok(num) = buf.parse::<isize>() {
-            Value::Integer(num)
-        } else {
-            Value::Symbol(buf)
-        };
-
-        self.parts.push(Rc::new(value));
-    }
-
-    fn parse(&mut self) {
-        let mut buf = String::new();
-
-        loop {
-            let c = match self.code.next() {
-                Some(c) => c,
-                None => break,
-            };
-
-            // TODO: Add strings.
-            match c {
-                '(' => self.parse(),
-
-                ')' => break,
-
-                ' ' => {
-                    let old_buf = mem::replace(&mut buf, String::new());
-
-                    if !old_buf.is_empty() {
-                        self.append_value(old_buf);
-                    }
-                }
-
-                c => {
-                    buf.push(c);
-                }
+    macro_rules! append_value {
+        ($buf: ident) => {
+            if !$buf.is_empty() {
+                parts.push(Value::from($buf));
             }
         }
+    }
 
-        if !buf.is_empty() {
-            self.append_value(buf);
+    loop {
+        let c = match chars.next() {
+            Some(c) => c,
+            None => break,
+        };
+
+        match c {
+            '(' => parse_impl(parts, chars),
+
+            ')' => break,
+
+            ' ' => {
+                let old_buf = mem::replace(&mut buf, String::new());
+
+                append_value!(old_buf);
+            }
+
+            c => {
+                buf.push(c);
+            }
         }
     }
 
-    fn root(self) -> Value {
-        Value::from(self.parts)
-    }
+    append_value!(buf);
 }
 
 pub fn parse(code: &str) -> Value {
-    let mut parser = Parser::new(code);
-    parser.parse();
-    parser.root()
+    let mut parts = Vec::new();
+    parse_impl(&mut parts, &mut code.chars());
+    Value::from(parts)
 }

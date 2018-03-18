@@ -4,7 +4,8 @@ use std::str::Chars;
 use values::Value;
 
 
-fn parse_impl(parts: &mut Vec<Value>, chars: &mut Chars) {
+fn parse_impl(chars: &mut Chars) -> Value {
+    let mut parts = Vec::new();
     let mut buf = String::new();
 
     macro_rules! append_value {
@@ -22,7 +23,7 @@ fn parse_impl(parts: &mut Vec<Value>, chars: &mut Chars) {
         };
 
         match c {
-            '(' => parse_impl(parts, chars),
+            '(' => parts.push(parse_impl(chars)),
 
             ')' => break,
 
@@ -39,10 +40,9 @@ fn parse_impl(parts: &mut Vec<Value>, chars: &mut Chars) {
     }
 
     append_value!(buf);
+    Value::from(parts)
 }
 
 pub fn parse(code: &str) -> Value {
-    let mut parts = Vec::new();
-    parse_impl(&mut parts, &mut code.chars());
-    Value::from(parts)
+    parse_impl(&mut code.chars())
 }

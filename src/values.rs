@@ -20,6 +20,10 @@ impl Value {
         Value::Cons(None)
     }
 
+    pub fn singleton(car: Rc<Value>) -> Value {
+        Value::Cons(Some((car, None)))
+    }
+
     pub fn cons(car: Rc<Value>, cdr: Rc<Value>) -> Value {
         Value::Cons(Some((car, Some(cdr))))
     }
@@ -53,7 +57,10 @@ impl From<Vec<Value>> for Value {
             conductor = new_conductor;
         }
 
-        conductor
+        match conductor {
+            Value::Cons(_) => conductor,
+            _ => Value::singleton(Rc::new(conductor)),
+        }
     }
 }
 
